@@ -26,7 +26,36 @@ impl Environment {
     }
 
     pub fn set(&mut self, key: String, value: Value) -> Option<Value> {
-        self.variables.insert(key, value)
+        // Hack - should be done at compile time not runtime
+        match self.get_with_depth(key.clone(), 0) {
+            None => self.variables.insert(key.clone(), value),
+            Some((_, 0)) => self.variables.insert(key.clone(), value),
+            Some((_, depth)) => self.set_at_depth(key.clone(), value, depth),
+        }
+    }
+
+    fn set_at_depth(&mut self, key: String, value: Value, depth: u16) -> Option<Value> {
+        let mut i = 1;
+        let mut env = self.pop();
+        while i < depth {
+            env = env.and_then(|e| e.borrow().pop());
+            i += 1;
+        }
+
+        match env {
+            None => None,
+            Some(e) => e.borrow_mut().set(key, value),
+        }
+    }
+
+    fn get_with_depth(&self, key: String, depth: u16) -> Option<(Value, u16)> {
+        match self.variables.get(&key).cloned() {
+            None => match self.pop() {
+                Some(env) => env.borrow().get_with_depth(key, depth + 1),
+                None => None,
+            },
+            Some(some) => Some((some, depth)),
+        }
     }
 
     pub fn get(&self, key: String) -> Option<Value> {

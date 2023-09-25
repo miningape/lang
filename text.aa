@@ -2,5 +2,8 @@ let adder = (n) => {
     () => let n = n + 1;
 };
 
-let a = adder(1);
+let a = adder(10);
+print(a());
+print(a());
+print(a());
 print(a());

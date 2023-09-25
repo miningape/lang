@@ -24,22 +24,20 @@ fn main() {
     match tokens {
         Err(err) => panic!("An error occured while scanning:\n-\t{}", err),
         Ok(vec) => {
-            println!("{:#?}", vec);
+            // println!("{:#?}", vec);
             let expressions = parser::parse(vec).unwrap();
 
             for expression in expressions.iter() {
-                println!(
-                    "--- OUTPUT ---\ntree:\n {}\nresult: {:#?}\nenvironment: {}",
-                    expression.to_string(),
-                    expression.interpret(&mut interpreter).unwrap(),
-                    interpreter.print_environment(),
-                );
+                expression.interpret(&mut interpreter).unwrap();
+                // println!(
+                //     "--- OUTPUT ---\ntree:\n {}\nresult: {:#?}\nenvironment: {}\n",
+                //     expression.to_string(),
+                //     expression.interpret(&mut interpreter).unwrap(),
+                //     interpreter.print_environment(),
+                // );
             }
 
-            // match expressions {
-            //     Err(err) => panic!("An error occured while parsing:\n-\t{}", err),
-            //     Ok(exprs) => print!("{:#?}", exprs)
-            // }
+            println!("")
         }
     }
 }
