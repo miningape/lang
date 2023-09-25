@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ptr::null_mut};
+use std::{cell::RefCell, rc::Rc};
 
 use crate::{environment::Environment, value::Value};
 
@@ -11,45 +11,46 @@ pub mod unary;
 pub mod variable;
 
 pub struct Interpreter {
-    pub environment: *mut Environment,
+    pub environment: Rc<RefCell<Environment>>,
 }
 
 impl Interpreter {
-    pub fn get(&mut self, key: String) -> Option<Value> {
-        unsafe { self.environment.as_mut().unwrap().get(key) }
-    }
-
-    pub fn set(&mut self, key: String, value: Value) -> Option<Value> {
-        unsafe { self.environment.as_mut().unwrap().set(key, value) }
-    }
-
-    pub fn push_environment(&mut self) {
-        self.environment = &mut Environment {
-            variables: HashMap::new(),
-            parent: self.environment,
-        } as *mut Environment
-    }
-
-    pub fn pop_environment(&mut self) -> Result<(), String> {
-        unsafe {
-            Ok(
-                self.environment = match self.environment.as_mut().unwrap().pop() {
-                    Some(environment) => environment,
-                    None => return Err(String::from("Cannot pop base environment")),
-                },
-            )
+    pub fn new() -> Interpreter {
+        Interpreter {
+            environment: Environment::new(None),
         }
     }
 
+    pub fn get(&self, key: String) -> Option<Value> {
+        self.environment.borrow().get(key)
+    }
+
+    pub fn set(&self, key: String, value: Value) -> Option<Value> {
+        self.environment.borrow_mut().set(key, value)
+    }
+
+    pub fn push_environment(&mut self) {
+        self.environment = Environment::new(Some(&self.environment))
+    }
+
+    pub fn pop_environment(&mut self) -> Result<(), String> {
+        self.environment = match Rc::clone(&self.environment).borrow().pop() {
+            Some(environment) => environment,
+            None => return Err(String::from("Cannot pop base environment")),
+        };
+
+        Ok(())
+    }
+
     pub fn print_environment(&self) -> String {
-        unsafe { self.environment.as_ref().unwrap().print() }
+        self.environment.borrow().print()
     }
 }
 
 impl Clone for Interpreter {
     fn clone(&self) -> Self {
         Interpreter {
-            environment: self.environment,
+            environment: Rc::clone(&self.environment),
         }
     }
 }

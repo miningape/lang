@@ -43,10 +43,7 @@ impl Callable for FunctionInstance {
             return Err(format!("Arguments for function mismatch"));
         }
 
-        self.interpreter.environment = &mut Environment {
-            variables: HashMap::new(),
-            parent: self.interpreter.environment,
-        } as *mut Environment;
+        self.interpreter.push_environment();
         for (index, argument_name) in self.argument_names.iter().enumerate() {
             self.interpreter
                 .set(argument_name.to_string(), arguments[index].clone());
@@ -56,10 +53,7 @@ impl Callable for FunctionInstance {
         for expression in self.body.iter() {
             last_result = expression.interpret(&mut self.interpreter)?;
         }
-
-        unsafe {
-            self.interpreter.environment = self.interpreter.environment.as_mut().unwrap().parent;
-        }
+        self.interpreter.pop_environment();
 
         Ok(last_result)
     }

@@ -14,12 +14,7 @@ pub mod value;
 fn main() {
     let source = fs::read_to_string("text.aa").unwrap();
     let tokens = tokeniser::scan(source);
-    let mut interpreter = Interpreter {
-        environment: &mut Environment {
-            variables: HashMap::new(),
-            parent: null_mut(),
-        } as *mut Environment,
-    };
+    let mut interpreter = Interpreter::new();
 
     interpreter.set(
         "print".to_owned(),
