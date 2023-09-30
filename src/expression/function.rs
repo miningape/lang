@@ -1,6 +1,6 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
-use crate::{callable::Callable, environment::Environment, value::Value};
+use crate::{callable::Callable, value::Value};
 
 use super::{Expression, Interpreter};
 
