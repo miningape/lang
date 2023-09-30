@@ -13,3 +13,16 @@ print(adder());
 print(adder());
 print(adder());
 print(adder());
+
+let Result = enum {
+    None,
+    Some(value)
+};
+
+let getResult = (n) => 
+    if n > 10 
+        Result::Some(n) 
+    else 
+        Result::None;
+
+

@@ -3,8 +3,8 @@ use std::rc::Rc;
 use crate::{
     expression::Expression,
     expression::{
-        assign::Assign, binary::Binary, call::Call, function::Function, literal::Literal,
-        unary::Unary, variable::Variable,
+        assign::Assign, binary::Binary, body::Body, call::Call, function::Function,
+        if_expression::If, literal::Literal, unary::Unary, variable::Variable,
     },
     tokeniser::{Keyword, Operator, Symbol, Token},
 };
@@ -119,24 +119,8 @@ impl Parser {
             Err(err) => return Err(err),
         }
 
-        let mut body = Vec::new();
-        if !self.check(Symbol::LeftBrace) {
-            let expression = self.expression()?;
-            body.push(expression);
+        let body = self.expression()?;
 
-            return Ok(Box::from(Function {
-                argument_names,
-                body: Rc::new(body),
-            }));
-        }
-
-        self.advance();
-        while !self.check(Symbol::RightBrace) {
-            let expression = self.next()?;
-            body.push(expression);
-        }
-
-        self.advance();
         Ok(Box::new(Function {
             argument_names,
             body: Rc::new(body),
@@ -148,6 +132,18 @@ impl Parser {
         match self.previous().symbol {
             Symbol::Identifier(identifier) => Ok(Box::new(Variable { name: identifier })),
             Symbol::Literal(value) => Ok(Box::new(Literal { value })),
+            Symbol::LeftBrace => {
+                let mut body = Vec::new();
+
+                while !self.check(Symbol::RightBrace) {
+                    let expression = self.next()?;
+                    body.push(expression);
+                }
+
+                self.expect(&[Symbol::RightBrace])?;
+
+                Ok(Box::new(Body { body }))
+            }
             Symbol::LeftParen => {
                 match self.safe_peek_symbol() {
                     Some(Symbol::Identifier(_)) => return self.function_definition(),
@@ -318,6 +314,24 @@ impl Parser {
                     symbol
                 )),
             };
+        }
+
+        if let Some(Symbol::Keyword(Keyword::If)) = self.safe_peek_symbol() {
+            self.advance();
+            let condition = self.expression()?;
+            let body = self.expression()?;
+            let mut else_body: Option<Box<dyn Expression>> = None;
+
+            if let Some(Symbol::Keyword(Keyword::Else)) = self.safe_peek_symbol() {
+                self.advance();
+                else_body = Some(self.expression()?);
+            }
+
+            return Ok(Box::from(If {
+                condition,
+                body,
+                else_body,
+            }));
         }
 
         self.logic_or()

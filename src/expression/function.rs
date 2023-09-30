@@ -6,7 +6,7 @@ use super::{Expression, Interpreter};
 
 pub struct Function {
     pub argument_names: Vec<String>,
-    pub body: Rc<Vec<Box<dyn Expression>>>,
+    pub body: Rc<Box<dyn Expression>>,
 }
 
 impl Expression for Function {
@@ -22,14 +22,14 @@ impl Expression for Function {
         format!(
             "{{ \"type\": \"Function\", \"argument_names\": {:#?}, \"body\": {:#?} }}",
             self.argument_names,
-            self.body.iter().map(|e| e.to_string()).collect::<Vec<_>>()
+            self.body.to_string()
         )
     }
 }
 
 pub struct FunctionInstance {
     pub argument_names: Vec<String>,
-    pub body: Rc<Vec<Box<dyn Expression>>>,
+    pub body: Rc<Box<dyn Expression>>,
     pub interpreter: Interpreter,
 }
 
@@ -57,12 +57,9 @@ impl Callable for FunctionInstance {
                 .set(argument_name.to_string(), arguments[index].clone());
         }
 
-        let mut last_result = Value::Number(-1.0);
-        for expression in self.body.iter() {
-            last_result = expression.interpret(&mut self.interpreter)?;
-        }
+        let result = self.body.interpret(&mut self.interpreter);
         self.interpreter.pop_environment()?;
 
-        Ok(last_result)
+        result
     }
 }

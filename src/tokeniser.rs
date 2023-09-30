@@ -46,6 +46,8 @@ impl Literal {
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Keyword {
     Let,
+    If,
+    Else,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -159,6 +161,8 @@ fn scan_numeric(
 fn get_symbol_from_identifier(identifier: String) -> Symbol {
     match identifier.as_str() {
         "let" => Symbol::Keyword(Keyword::Let),
+        "if" => Symbol::Keyword(Keyword::If),
+        "else" => Symbol::Keyword(Keyword::Else),
         "true" => Symbol::Literal(Literal::Boolean(true)),
         "false" => Symbol::Literal(Literal::Boolean(false)),
         _ => Symbol::Identifier(identifier),

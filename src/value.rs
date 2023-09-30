@@ -4,6 +4,7 @@ use crate::callable::Callable;
 
 #[derive(Clone)]
 pub enum Value {
+    Null,
     String(String),
     Number(f32),
     Boolean(bool),
@@ -24,6 +25,7 @@ fn string_add<L: std::fmt::Display, R: std::fmt::Display>(left: L, right: R) -> 
 impl Value {
     pub fn to_string(&self) -> String {
         match self {
+            Value::Null => String::from("null"),
             Value::Number(number) => number.to_string(),
             Value::String(string) => format!("{}", string),
             Value::Boolean(boolean) => format!(
@@ -39,6 +41,7 @@ impl Value {
 
     pub fn to_log_string(&self) -> String {
         match self {
+            Value::Null => String::from("null"),
             Value::Number(number) => number.to_string(),
             Value::String(string) => format!("\"{}\"", string),
             Value::Boolean(boolean) => format!(

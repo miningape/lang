@@ -4,8 +4,10 @@ use crate::{environment::Environment, value::Value};
 
 pub mod assign;
 pub mod binary;
+pub mod body;
 pub mod call;
 pub mod function;
+pub mod if_expression;
 pub mod literal;
 pub mod unary;
 pub mod variable;
