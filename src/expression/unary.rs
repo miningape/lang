@@ -3,12 +3,16 @@ use crate::{tokeniser::Operator, value::Value};
 use super::{Expression, Interpreter};
 
 pub struct Unary {
-    operator: Operator,
-    value: dyn Expression,
+    pub operator: Operator,
+    pub value: Box<dyn Expression>,
 }
 
 impl Expression for Unary {
     fn interpret(&self, interpreter: &mut Interpreter) -> Result<Value, String> {
+        if self.operator == Operator::Not {
+            return self.value.interpret(interpreter)?.not();
+        }
+
         if self.operator != Operator::Minus {
             return Err(format!("Trying to perform a unary operation without minus"));
         }
@@ -16,6 +20,7 @@ impl Expression for Unary {
         match self.value.interpret(interpreter)? {
             Value::Number(number) => Ok(Value::Number(-number)),
             Value::String(string) => Err(format!("Cannot negate string: {}", string)),
+            Value::Boolean(boolean) => Err(format!("Cannot negate boolean: {}", boolean)),
             Value::Function(function) => Err(format!(
                 "Cannot negate function: {}",
                 function.borrow().signature()

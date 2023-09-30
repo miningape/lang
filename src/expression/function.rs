@@ -53,7 +53,7 @@ impl Callable for FunctionInstance {
         for expression in self.body.iter() {
             last_result = expression.interpret(&mut self.interpreter)?;
         }
-        self.interpreter.pop_environment();
+        self.interpreter.pop_environment()?;
 
         Ok(last_result)
     }

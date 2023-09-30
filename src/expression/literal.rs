@@ -11,6 +11,7 @@ impl Expression for Literal {
         return Ok(match self.value.clone() {
             tokeniser::Literal::Number(number) => Value::Number(number),
             tokeniser::Literal::String(string) => Value::String(string),
+            tokeniser::Literal::Boolean(boolean) => Value::Boolean(boolean),
         });
     }
 

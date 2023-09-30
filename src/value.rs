@@ -6,6 +6,7 @@ use crate::callable::Callable;
 pub enum Value {
     String(String),
     Number(f32),
+    Boolean(bool),
     Function(Rc<RefCell<dyn Callable>>),
 }
 
@@ -25,7 +26,14 @@ impl Value {
         match self {
             Value::Number(number) => number.to_string(),
             Value::String(string) => format!("{}", string),
-            Value::Function(function) => format!("{}", function.borrow().signature()),
+            Value::Boolean(boolean) => format!(
+                "{}",
+                match boolean {
+                    true => "true",
+                    _ => "false",
+                }
+            ),
+            Value::Function(function) => format!("(fn:{})", function.borrow().signature()),
         }
     }
 
@@ -33,38 +41,32 @@ impl Value {
         match self {
             Value::Number(number) => number.to_string(),
             Value::String(string) => format!("\"{}\"", string),
-            Value::Function(function) => format!("{}", function.borrow().signature()),
+            Value::Boolean(boolean) => format!(
+                "{}",
+                match boolean {
+                    true => "true",
+                    _ => "false",
+                }
+            ),
+            Value::Function(function) => format!("Function: \"{}\"", function.borrow().signature()),
         }
+    }
+
+    pub fn not(self) -> Result<Value, String> {
+        if let Value::Boolean(boolean) = self {
+            return Ok(Value::Boolean(!boolean));
+        }
+
+        return Err("Cannot negate non bool".to_owned());
     }
 
     pub fn add(self, right: Value) -> Result<Value, String> {
         Ok(match self {
             Value::Number(left_num) => match right {
                 Value::Number(right_num) => Value::Number(left_num + right_num),
-                Value::String(right_string) => Value::String(string_add(left_num, right_string)),
-                Value::Function(right_function) => {
-                    Value::String(string_add(left_num, right_function.borrow().signature()))
-                }
+                value => Value::String(string_add(left_num.to_string(), value.to_string())),
             },
-            Value::String(left_string) => match right {
-                Value::Number(right_num) => Value::String(string_add(left_string, right_num)),
-                Value::String(right_string) => Value::String(string_add(left_string, right_string)),
-                Value::Function(right_function) => {
-                    Value::String(string_add(left_string, right_function.borrow().signature()))
-                }
-            },
-            Value::Function(left_function) => match right {
-                Value::Number(right_num) => {
-                    Value::String(string_add(left_function.borrow().signature(), right_num))
-                }
-                Value::String(right_string) => {
-                    Value::String(string_add(left_function.borrow().signature(), right_string))
-                }
-                Value::Function(right_function) => Value::String(string_add(
-                    left_function.borrow().signature(),
-                    right_function.borrow().signature(),
-                )),
-            },
+            value => Value::String(string_add(value.to_string(), right.to_string())),
         })
     }
 
@@ -76,5 +78,91 @@ impl Value {
         }
 
         return Err("Cannot subtract non number values".to_owned());
+    }
+
+    pub fn mul(self, right: Value) -> Result<Value, String> {
+        if let Value::Number(left_number) = self {
+            if let Value::Number(right_number) = right {
+                return Ok(Value::Number(left_number * right_number));
+            }
+        }
+
+        return Err("Cannot subtract non number values".to_owned());
+    }
+
+    pub fn div(self, right: Value) -> Result<Value, String> {
+        if let Value::Number(left_number) = self {
+            if let Value::Number(right_number) = right {
+                return Ok(Value::Number(left_number / right_number));
+            }
+        }
+
+        return Err("Cannot subtract non number values".to_owned());
+    }
+
+    pub fn equals(self, right: Value) -> Result<Value, String> {
+        if let Value::Number(left_number) = self {
+            if let Value::Number(right_number) = right {
+                return Ok(Value::Boolean(left_number == right_number));
+            }
+        }
+
+        if let Value::Boolean(left_bool) = self {
+            if let Value::Boolean(right_bool) = right {
+                return Ok(Value::Boolean(left_bool == right_bool));
+            }
+        }
+
+        if let Value::String(left_string) = self.clone() {
+            if let Value::String(right_string) = right {
+                return Ok(Value::Boolean(left_string == right_string));
+            }
+        }
+
+        return Err(format!(
+            "Cannot equate {} with {}.",
+            self.to_log_string(),
+            right.to_log_string()
+        ));
+    }
+
+    pub fn greater(self, right: Value) -> Result<Value, String> {
+        if let Value::Number(left_number) = self {
+            if let Value::Number(right_number) = right {
+                return Ok(Value::Boolean(left_number > right_number));
+            }
+        }
+
+        return Err("Cannot compare (>) non number values".to_owned());
+    }
+
+    pub fn lesser(self, right: Value) -> Result<Value, String> {
+        if let Value::Number(left_number) = self {
+            if let Value::Number(right_number) = right {
+                return Ok(Value::Boolean(left_number < right_number));
+            }
+        }
+
+        return Err("Cannot compare (<) non number values".to_owned());
+    }
+
+    pub fn and(self, right: Value) -> Result<Value, String> {
+        if let Value::Boolean(left_boolean) = self {
+            if let Value::Boolean(right_boolean) = right {
+                return Ok(Value::Boolean(left_boolean && right_boolean));
+            }
+        }
+
+        return Err("Cannot and non boolean values".to_owned());
+    }
+
+    pub fn or(self, right: Value) -> Result<Value, String> {
+        if let Value::Boolean(left_boolean) = self {
+            if let Value::Boolean(right_boolean) = right {
+                return Ok(Value::Boolean(left_boolean || right_boolean));
+            }
+        }
+
+        return Err("Cannot or non boolean values".to_owned());
     }
 }

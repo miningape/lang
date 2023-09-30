@@ -7,12 +7,22 @@ pub enum Operator {
     Minus,
     Star,
     Slash,
+    Not,
+    Equal,
+    NotEqual,
+    GreaterThan,
+    LesserThan,
+    GreaterThanOrEqual,
+    LesserThanOrEqual,
+    And,
+    Or,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Literal {
     String(String),
     Number(f32),
+    Boolean(bool),
 }
 
 impl Literal {
@@ -20,6 +30,15 @@ impl Literal {
         match self {
             Literal::Number(number) => format!("{}", number),
             Literal::String(string) => format!("\"{}\"", string),
+            Literal::Boolean(boolean) => {
+                format!(
+                    "{}",
+                    match boolean {
+                        true => "true",
+                        _ => "false",
+                    }
+                )
+            }
         }
     }
 }
@@ -40,7 +59,7 @@ pub enum Symbol {
 
     Comma,
     Semi,
-    Equals,
+    Assign,
 
     LeftParen,
     RightParen,
@@ -68,9 +87,14 @@ fn scan_symbol(char: char) -> Option<Symbol> {
         ')' => Option::Some(Symbol::RightParen),
         ',' => Option::Some(Symbol::Comma),
         ';' => Option::Some(Symbol::Semi),
-        '=' => Option::Some(Symbol::Equals),
+        '=' => Option::Some(Symbol::Assign),
         '{' => Option::Some(Symbol::LeftBrace),
         '}' => Option::Some(Symbol::RightBrace),
+        '>' => Option::Some(Symbol::Operator(Operator::GreaterThan)),
+        '<' => Option::Some(Symbol::Operator(Operator::LesserThan)),
+        '&' => Option::Some(Symbol::Operator(Operator::And)),
+        '|' => Option::Some(Symbol::Operator(Operator::Or)),
+        '!' => Option::Some(Symbol::Operator(Operator::Not)),
         // '\n' => Option::Some(Symbol::Newline),
         _ => Option::None,
     }
@@ -135,6 +159,8 @@ fn scan_numeric(
 fn get_symbol_from_identifier(identifier: String) -> Symbol {
     match identifier.as_str() {
         "let" => Symbol::Keyword(Keyword::Let),
+        "true" => Symbol::Literal(Literal::Boolean(true)),
+        "false" => Symbol::Literal(Literal::Boolean(false)),
         _ => Symbol::Identifier(identifier),
     }
 }
@@ -175,18 +201,65 @@ fn scan_alphanumeric(
     return scan_indentifier(char, index, chars);
 }
 
+fn scan_special(
+    char: char,
+    index: usize,
+    chars: &mut Peekable<Enumerate<Chars>>,
+) -> Result<Token, String> {
+    match char {
+        '\"' => scan_string(index, chars),
+        '!' if chars.peek().is_some_and(|(_, ch)| *ch == '=') => {
+            if let Some((_, '=')) = chars.next() {
+                Ok(Token {
+                    line: 0,
+                    index: index,
+                    symbol: Symbol::Operator(Operator::NotEqual),
+                })
+            } else {
+                Err(String::from("! was not followed by ="))
+            }
+        }
+        '<' | '>' if chars.peek().is_some_and(|(_, ch)| *ch == '=') => {
+            chars.next();
+            Ok(Token {
+                line: 0,
+                index,
+                symbol: match char {
+                    '>' => Symbol::Operator(Operator::GreaterThanOrEqual),
+                    '<' => Symbol::Operator(Operator::LesserThanOrEqual),
+                    _ => return Err(String::from("Help!")),
+                },
+            })
+        }
+        '=' if chars.peek().is_some_and(|(_, ch)| *ch == '>' || *ch == '=') => match chars.next() {
+            Some((_, '>')) => Ok(Token {
+                line: 0,
+                index,
+                symbol: Symbol::Arrow,
+            }),
+            Some((_, '=')) => Ok(Token {
+                line: 0,
+                index,
+                symbol: Symbol::Operator(Operator::Equal),
+            }),
+            _ => Err(String::from("gg")),
+        },
+        _ => Err("scan special was given a char that it cannot process".to_owned()),
+    }
+}
+
 fn get_next_token(chars: &mut Peekable<Enumerate<Chars>>) -> Result<Token, String> {
     match chars.next() {
         Some((index, char)) => match char {
-            '\"' => scan_string(index, chars),
-            '=' if chars.peek().is_some_and(|(_, ch)| *ch == '>') => {
-                chars.next();
-
-                Ok(Token {
-                    line: 0,
-                    index,
-                    symbol: Symbol::Arrow,
-                })
+            '\"' => scan_special(char, index, chars),
+            '!' if chars.peek().is_some_and(|(_, ch)| *ch == '=') => {
+                scan_special(char, index, chars)
+            }
+            '<' | '>' if chars.peek().is_some_and(|(_, ch)| *ch == '=') => {
+                scan_special(char, index, chars)
+            }
+            '=' if chars.peek().is_some_and(|(_, ch)| *ch == '>' || *ch == '=') => {
+                scan_special(char, index, chars)
             }
             _ if char.is_whitespace() => get_next_token(chars),
             _ if char.is_alphanumeric() => scan_alphanumeric(char, index, chars),

@@ -16,7 +16,17 @@ impl Expression for Binary {
         match self.operator {
             Operator::Plus => left.add(right),
             Operator::Minus => left.sub(right),
-            _ => Err(format!("Cannot use the operation: {:#?}", self.operator)),
+            Operator::Star => left.mul(right),
+            Operator::Slash => left.div(right),
+            Operator::Equal => left.equals(right),
+            Operator::NotEqual => left.equals(right)?.not(),
+            Operator::GreaterThan => left.greater(right),
+            Operator::GreaterThanOrEqual => left.lesser(right)?.not(),
+            Operator::LesserThan => left.lesser(right),
+            Operator::LesserThanOrEqual => left.greater(right)?.not(),
+            Operator::And => left.and(right),
+            Operator::Or => left.or(right),
+            Operator::Not => Err("Cannot use ! (not) in a binary expression".to_owned()),
         }
     }
 

@@ -1,7 +1,6 @@
-use std::{cell::RefCell, collections::HashMap, fs, ptr::null_mut, rc::Rc};
+use std::{cell::RefCell, fs, rc::Rc};
 
 use callable::print::Print;
-use environment::Environment;
 use expression::Interpreter;
 
 pub mod callable;

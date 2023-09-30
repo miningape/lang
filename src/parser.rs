@@ -4,7 +4,7 @@ use crate::{
     expression::Expression,
     expression::{
         assign::Assign, binary::Binary, call::Call, function::Function, literal::Literal,
-        variable::Variable,
+        unary::Unary, variable::Variable,
     },
     tokeniser::{Keyword, Operator, Symbol, Token},
 };
@@ -191,11 +191,108 @@ impl Parser {
         return Ok(expr);
     }
 
-    fn binary(&mut self) -> Result<Box<dyn Expression>, String> {
-        let mut expr = self.call()?;
+    fn unary(&mut self) -> Result<Box<dyn Expression>, String> {
+        if let Some(operator) = self.match_operators(&[Operator::Minus, Operator::Not]) {
+            let expression = self.unary()?;
+            return Ok(Box::new(Unary {
+                operator,
+                value: expression,
+            }));
+        }
+
+        return self.call();
+    }
+
+    fn factor(&mut self) -> Result<Box<dyn Expression>, String> {
+        let mut expr = self.unary()?;
+
+        while let Some(operator) = self.match_operators(&[Operator::Star, Operator::Slash]) {
+            let right = self.unary()?;
+
+            expr = Box::from(Binary {
+                left: expr,
+                operator: operator,
+                right,
+            });
+        }
+
+        return Ok(expr);
+    }
+
+    fn term(&mut self) -> Result<Box<dyn Expression>, String> {
+        let mut expr = self.factor()?;
 
         while let Some(operator) = self.match_operators(&[Operator::Plus, Operator::Minus]) {
-            let right = self.call()?;
+            let right = self.factor()?;
+
+            expr = Box::from(Binary {
+                left: expr,
+                operator: operator,
+                right,
+            });
+        }
+
+        return Ok(expr);
+    }
+
+    fn comparison(&mut self) -> Result<Box<dyn Expression>, String> {
+        let mut expr = self.term()?;
+
+        while let Some(operator) = self.match_operators(&[
+            Operator::GreaterThan,
+            Operator::GreaterThanOrEqual,
+            Operator::LesserThan,
+            Operator::LesserThanOrEqual,
+        ]) {
+            let right = self.term()?;
+
+            expr = Box::from(Binary {
+                left: expr,
+                operator: operator,
+                right,
+            });
+        }
+
+        return Ok(expr);
+    }
+
+    fn equality(&mut self) -> Result<Box<dyn Expression>, String> {
+        let mut expr = self.comparison()?;
+
+        while let Some(operator) = self.match_operators(&[Operator::Equal, Operator::NotEqual]) {
+            let right = self.comparison()?;
+
+            expr = Box::from(Binary {
+                left: expr,
+                operator: operator,
+                right,
+            });
+        }
+
+        return Ok(expr);
+    }
+
+    fn logic_and(&mut self) -> Result<Box<dyn Expression>, String> {
+        let mut expr = self.equality()?;
+
+        while let Some(operator) = self.match_operators(&[Operator::And]) {
+            let right = self.equality()?;
+
+            expr = Box::from(Binary {
+                left: expr,
+                operator: operator,
+                right,
+            });
+        }
+
+        return Ok(expr);
+    }
+
+    fn logic_or(&mut self) -> Result<Box<dyn Expression>, String> {
+        let mut expr = self.logic_and()?;
+
+        while let Some(operator) = self.match_operators(&[Operator::Or]) {
+            let right = self.logic_and()?;
 
             expr = Box::from(Binary {
                 left: expr,
@@ -212,7 +309,7 @@ impl Parser {
             return match self.peek().symbol {
                 Symbol::Identifier(key) => {
                     self.advance();
-                    self.expect(&[Symbol::Equals])?;
+                    self.expect(&[Symbol::Assign])?;
                     let value = self.expression()?;
                     Ok(Box::from(Assign { key, value }))
                 }
@@ -223,7 +320,7 @@ impl Parser {
             };
         }
 
-        self.binary()
+        self.logic_or()
     }
 
     fn expression(&mut self) -> Result<Box<dyn Expression>, String> {
