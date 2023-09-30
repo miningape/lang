@@ -38,6 +38,14 @@ impl Callable for FunctionInstance {
         String::from("Function")
     }
 
+    fn clone(&self) -> Rc<RefCell<dyn Callable>> {
+        return Rc::new(RefCell::new(FunctionInstance {
+            argument_names: self.argument_names.clone(),
+            body: Rc::clone(&self.body),
+            interpreter: self.interpreter.clone(),
+        }));
+    }
+
     fn call(&mut self, arguments: Vec<crate::value::Value>) -> Result<Value, String> {
         if self.argument_names.len() != arguments.len() {
             return Err(format!("Arguments for function mismatch"));

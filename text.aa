@@ -1,2 +1,4 @@
-print(!!("a" == "a"));
+let isOdd = (n) => !isEven(n);
+let isEven = (n) => n == 0 | isOdd(n - 1);
 
+print(isEven(9));

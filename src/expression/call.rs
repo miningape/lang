@@ -17,7 +17,7 @@ impl Expression for Call {
                 arguments.push(value);
             }
 
-            return callee.borrow_mut().call(arguments);
+            return callee.borrow().clone().borrow_mut().call(arguments);
         }
         panic!("Expression(Call).interpret - not implemented!")
     }
