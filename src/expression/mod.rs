@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use crate::{environment::Environment, value::Value};
+use crate::{callable::print::Print, environment::Environment, value::Value};
 
 pub mod assign;
 pub mod binary;
@@ -18,9 +18,16 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn new() -> Interpreter {
-        Interpreter {
+        let interpreter = Interpreter {
             environment: Environment::new(None),
-        }
+        };
+
+        interpreter.set(
+            "print".to_owned(),
+            Value::Function(Rc::new(RefCell::new(Print {}))),
+        );
+
+        return interpreter;
     }
 
     pub fn get(&self, key: String) -> Option<Value> {

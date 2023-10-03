@@ -1,0 +1,6 @@
+// Inferred types
+let x = 1;
+
+let assert = (condition: boolean, message: string): null | never {
+    
+} 

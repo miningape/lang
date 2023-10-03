@@ -1,0 +1,26 @@
+// const as default
+let x = 10;
+x = x + 1; // Error!
+
+// when const, cannot create a variable with value null
+let x; // Error!
+
+// mutability? yes
+let mut x = 10;
+x = x + 1;
+
+// mutable allows uninitalised variables
+// null is added to the inferred type
+let mut x;
+x = 10; // typeof x = number | null
+
+// variable with a type must respect that - allows overriding base rules
+// (cannot infer null, but will allow it if annotated or declared)
+let x: null; // annotated const null variable! 
+let x = null; // declared alternative
+let x: null = null; // type abuse!
+
+// but this cuts both ways
+let mut x: string; // Error!
+let x: string = null; // error
+// etc. 

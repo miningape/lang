@@ -287,7 +287,7 @@ fn get_next_token(chars: &mut Peekable<Enumerate<Chars>>) -> Result<Token, Strin
     }
 }
 
-pub fn scan(source: String) -> Result<Vec<Token>, String> {
+pub fn scan(source: &String) -> Result<Vec<Token>, String> {
     let mut chars = source.chars().enumerate().peekable();
     let mut tokens = Vec::new();
 
