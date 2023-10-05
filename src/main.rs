@@ -1,22 +1,24 @@
 use std::{
     env, fs,
-    io::{self, stdout, BufRead, Write},
+    io::{self, stdout, Write},
 };
 
 use expression::Interpreter;
 
-use crate::value::Value;
+use crate::{types::Type, value::Value};
 
 pub mod callable;
 pub mod environment;
 pub mod expression;
 pub mod parser;
 pub mod tokeniser;
+pub mod types;
 pub mod value;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let mut interpreter = Interpreter::new();
+    let mut interpreter = Interpreter::<Value>::new();
+    interpreter.seed();
 
     if args.len() > 1 {
         let filepath = &args[1];
@@ -26,8 +28,10 @@ fn main() {
     repl(&mut interpreter);
 }
 
-fn repl(interpreter: &mut Interpreter) {
+fn repl(interpreter: &mut Interpreter<Value>) {
     let stdin = io::stdin();
+    let mut type_checker = Interpreter::<Type>::new();
+    type_checker.seed();
 
     print!("> ");
     stdout().flush().unwrap();
@@ -39,6 +43,10 @@ fn repl(interpreter: &mut Interpreter) {
 
         let mut last_value = Value::Null;
         for expression in expressions.iter() {
+            println!(
+                "Type - {:#?}",
+                expression.check_type(&mut type_checker).unwrap()
+            );
             last_value = expression.interpret(interpreter).unwrap();
         }
 
@@ -47,9 +55,12 @@ fn repl(interpreter: &mut Interpreter) {
     }
 }
 
-fn interpret_file(filepath: &String, interpreter: &mut Interpreter) {
+fn interpret_file(filepath: &String, interpreter: &mut Interpreter<Value>) {
     let source = &fs::read_to_string(filepath).unwrap();
     let tokens = tokeniser::scan(source);
+
+    let mut type_checker = Interpreter::<Type>::new();
+    type_checker.seed();
 
     match tokens {
         Err(err) => panic!("An error occured while scanning:\n-\t{}", err),
@@ -58,6 +69,7 @@ fn interpret_file(filepath: &String, interpreter: &mut Interpreter) {
             let expressions = parser::parse(vec).unwrap();
 
             for expression in expressions.iter() {
+                expression.check_type(&mut type_checker).unwrap();
                 expression.interpret(interpreter).unwrap();
                 // println!(
                 //     "--- OUTPUT ---\ntree:\n {}\nresult: {:#?}\nenvironment: {}\n",

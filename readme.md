@@ -25,4 +25,16 @@ todos:
   - [ ] type as argument
   - [ ] type inference
 - [ ] imports & exports
+- [ ] I/O
+  - [ ] std
+  - [ ] file
+  - [ ] network
+- [ ] concurrency
+  - [ ] async / await (implicit virtual threading)
+  - [ ] multi-threading (explicit)
+  - [ ] mutex
 - [ ] compile (llvm? / wasm? / bytecode?)
+- standard library
+  - [ ] enums
+    - [ ] `Optional`
+    - [ ] `Result`

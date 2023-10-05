@@ -1,4 +1,7 @@
-use crate::value::Value;
+use crate::{
+    types::{BaseType, Type},
+    value::Value,
+};
 
 use super::{Expression, Interpreter};
 
@@ -7,7 +10,18 @@ pub struct Body {
 }
 
 impl Expression for Body {
-    fn interpret(&self, interpreter: &mut Interpreter) -> Result<Value, String> {
+    fn check_type(&self, type_checker: &mut Interpreter<Type>) -> Result<Type, String> {
+        type_checker.push_environment();
+        let result = match self.body.last() {
+            None => Ok(Type::BaseType(BaseType::Null)),
+            Some(expression) => expression.check_type(type_checker),
+        };
+        type_checker.pop_environment()?;
+
+        result
+    }
+
+    fn interpret(&self, interpreter: &mut Interpreter<Value>) -> Result<Value, String> {
         let mut last_result = Value::Null;
 
         interpreter.push_environment();

@@ -20,14 +20,24 @@ pub enum Operator {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Literal {
+    Null,
     String(String),
     Number(f32),
     Boolean(bool),
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub enum TypeLiteral {
+    Any,
+    String,
+    Number,
+    Boolean,
+}
+
 impl Literal {
     pub fn to_string(self) -> String {
         match self {
+            Literal::Null => String::from("null"),
             Literal::Number(number) => format!("{}", number),
             Literal::String(string) => format!("\"{}\"", string),
             Literal::Boolean(boolean) => {
@@ -52,6 +62,7 @@ pub enum Keyword {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Symbol {
+    TypeLiteral(TypeLiteral),
     Identifier(String),
     Literal(Literal),
     Operator(Operator),
@@ -62,6 +73,7 @@ pub enum Symbol {
     Comma,
     Semi,
     Assign,
+    Colon,
 
     LeftParen,
     RightParen,
@@ -97,6 +109,7 @@ fn scan_symbol(char: char) -> Option<Symbol> {
         '&' => Option::Some(Symbol::Operator(Operator::And)),
         '|' => Option::Some(Symbol::Operator(Operator::Or)),
         '!' => Option::Some(Symbol::Operator(Operator::Not)),
+        ':' => Option::Some(Symbol::Colon),
         // '\n' => Option::Some(Symbol::Newline),
         _ => Option::None,
     }
@@ -165,6 +178,11 @@ fn get_symbol_from_identifier(identifier: String) -> Symbol {
         "else" => Symbol::Keyword(Keyword::Else),
         "true" => Symbol::Literal(Literal::Boolean(true)),
         "false" => Symbol::Literal(Literal::Boolean(false)),
+        "null" => Symbol::Literal(Literal::Null),
+        "any" => Symbol::TypeLiteral(TypeLiteral::Any),
+        "number" => Symbol::TypeLiteral(TypeLiteral::Number),
+        "string" => Symbol::TypeLiteral(TypeLiteral::String),
+        "boolean" => Symbol::TypeLiteral(TypeLiteral::Boolean),
         _ => Symbol::Identifier(identifier),
     }
 }

@@ -1,15 +1,12 @@
-let isOdd = (n) => !isEven(n);
-let isEven = (n) => n == 0 | isOdd(n - 1);
+let isOdd = (n: number): boolean => 
+    !isEven(n);
 
-let makeAdder = () => {
-    let count = 0;
-    () => let count = count + 1;
-};
+let isEven = (n: number): boolean => 
+    n == 0 | isOdd(n - 1);
+
+
 
 print(isEven(9));
 
-let adder = makeAdder();
-print(adder());
-print(adder());
-print(adder());
-print(adder());
+
+

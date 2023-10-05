@@ -8,8 +8,8 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug",
-            "program": "${workspaceFolder}/<executable file>",
-            "args": [],
+            "program": "${workspaceFolder}/target/debug/lang",        
+            "args": ["examples/adder.aa"],
             "cwd": "${workspaceFolder}"
         }
     ]

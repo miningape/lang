@@ -1,4 +1,4 @@
-use crate::value::Value;
+use crate::{types::Type, value::Value};
 
 use super::{Expression, Interpreter};
 
@@ -8,7 +8,23 @@ pub struct Call {
 }
 
 impl Expression for Call {
-    fn interpret(&self, interpreter: &mut Interpreter) -> Result<Value, String> {
+    fn check_type(&self, type_interpreter: &mut Interpreter<Type>) -> Result<Type, String> {
+        let target = self.target.check_type(type_interpreter)?;
+        let argument_types = self
+            .arguments
+            .iter()
+            .map(|arg| arg.check_type(type_interpreter))
+            .collect::<Result<Vec<Type>, String>>()?;
+
+        if let Type::Function(function_type) = target {
+            return function_type.apply(argument_types);
+        }
+
+        print!("{:#?}", target);
+        Err(String::from("Cannot call non function"))
+    }
+
+    fn interpret(&self, interpreter: &mut Interpreter<Value>) -> Result<Value, String> {
         if let Value::Function(callee) = self.target.interpret(interpreter)? {
             let mut arguments = Vec::new();
 
@@ -17,7 +33,7 @@ impl Expression for Call {
                 arguments.push(value);
             }
 
-            return callee.borrow().clone().borrow_mut().call(arguments);
+            return callee.borrow().clone().call(arguments);
         }
         panic!("Expression(Call).interpret - not implemented!")
     }

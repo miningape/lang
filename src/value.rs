@@ -122,11 +122,7 @@ impl Value {
             }
         }
 
-        return Err(format!(
-            "Cannot equate {} with {}.",
-            self.to_log_string(),
-            right.to_log_string()
-        ));
+        return Ok(Value::Boolean(false));
     }
 
     pub fn greater(self, right: Value) -> Result<Value, String> {

@@ -1,9 +1,8 @@
-use std::{cell::RefCell, rc::Rc};
-
 use crate::value::Value;
 
 use super::Callable;
 
+#[derive(Clone)]
 pub struct Print {}
 
 impl Callable for Print {
@@ -13,8 +12,8 @@ impl Callable for Print {
         Ok(Value::String(s))
     }
 
-    fn clone(&self) -> Rc<RefCell<dyn Callable>> {
-        return Rc::new(RefCell::from(Print {}));
+    fn clone(&self) -> Box<dyn Callable> {
+        return Box::from(Print {});
     }
 
     fn signature(&self) -> String {

@@ -1,4 +1,8 @@
-use crate::{tokeniser::Operator, value::Value};
+use crate::{
+    tokeniser::Operator,
+    types::{BaseType, Type},
+    value::Value,
+};
 
 use super::{Expression, Interpreter};
 
@@ -8,8 +12,123 @@ pub struct Binary {
     pub right: Box<dyn Expression>,
 }
 
+fn typeof_add(left: Type, right: Type) -> Type {
+    if let Type::BaseType(BaseType::Any) = left {
+        return Type::Or(
+            Box::from(Type::BaseType(BaseType::String)),
+            Box::from(Type::BaseType(BaseType::Number)),
+        );
+    }
+
+    if let Type::BaseType(BaseType::Any) = right {
+        return Type::Or(
+            Box::from(Type::BaseType(BaseType::String)),
+            Box::from(Type::BaseType(BaseType::Number)),
+        );
+    }
+
+    if let Type::BaseType(BaseType::Any) = right {}
+
+    if left.is_sub_type_of(&Type::BaseType(BaseType::Number))
+        && right.is_sub_type_of(&Type::BaseType(BaseType::Number))
+    {
+        return Type::BaseType(BaseType::Number);
+    }
+
+    return Type::BaseType(BaseType::String);
+}
+
+fn assert_type_for(
+    symbol: &str,
+    type_: Type,
+    left: Type,
+    right: Type,
+    return_type: Type,
+) -> Result<Type, String> {
+    if left.is_sub_type_of(&type_) && right.is_sub_type_of(&type_) {
+        return Ok(return_type);
+    }
+
+    return Err(format!("Cannot not {} non-{:?} values", symbol, type_));
+}
+
 impl Expression for Binary {
-    fn interpret(&self, interpreter: &mut Interpreter) -> Result<Value, String> {
+    fn check_type(&self, type_interpreter: &mut Interpreter<Type>) -> Result<Type, String> {
+        let left = self.left.check_type(type_interpreter)?;
+        let right = self.right.check_type(type_interpreter)?;
+
+        match self.operator {
+            Operator::Plus => Ok(typeof_add(left, right)),
+            Operator::Minus => assert_type_for(
+                "subtract",
+                Type::BaseType(BaseType::Number),
+                left,
+                right,
+                Type::BaseType(BaseType::Number),
+            ),
+            Operator::Star => assert_type_for(
+                "multiply",
+                Type::BaseType(BaseType::Number),
+                left,
+                right,
+                Type::BaseType(BaseType::Number),
+            ),
+            Operator::Slash => assert_type_for(
+                "divide",
+                Type::BaseType(BaseType::Number),
+                left,
+                right,
+                Type::BaseType(BaseType::Number),
+            ),
+            Operator::Equal => Ok(Type::BaseType(BaseType::Boolean)),
+            Operator::NotEqual => Ok(Type::BaseType(BaseType::Boolean)),
+            Operator::GreaterThan => assert_type_for(
+                "compare >",
+                Type::BaseType(BaseType::Number),
+                left,
+                right,
+                Type::BaseType(BaseType::Boolean),
+            ),
+            Operator::GreaterThanOrEqual => assert_type_for(
+                "compare >=",
+                Type::BaseType(BaseType::Number),
+                left,
+                right,
+                Type::BaseType(BaseType::Boolean),
+            ),
+            Operator::LesserThan => assert_type_for(
+                "compare <",
+                Type::BaseType(BaseType::Number),
+                left,
+                right,
+                Type::BaseType(BaseType::Boolean),
+            ),
+            Operator::LesserThanOrEqual => assert_type_for(
+                "compare <=",
+                Type::BaseType(BaseType::Number),
+                left,
+                right,
+                Type::BaseType(BaseType::Boolean),
+            ),
+            Operator::And => assert_type_for(
+                "`and` (&)",
+                Type::BaseType(BaseType::Boolean),
+                left,
+                right,
+                Type::BaseType(BaseType::Boolean),
+            ),
+            Operator::Or => assert_type_for(
+                "`or` (|)",
+                Type::BaseType(BaseType::Boolean),
+                left,
+                right,
+                Type::BaseType(BaseType::Boolean),
+            ),
+            Operator::Not => Err("Cannot use ! (not) in a binary expression".to_owned()),
+        }
+    }
+
+    fn interpret(&self, interpreter: &mut Interpreter<Value>) -> Result<Value, String> {
         let left = self.left.interpret(interpreter)?;
 
         if let Value::Boolean(boolean) = left {

@@ -3,10 +3,18 @@ use std::rc::Rc;
 use crate::{
     expression::Expression,
     expression::{
-        assign::Assign, binary::Binary, body::Body, call::Call, function::Function,
-        if_expression::If, literal::Literal, unary::Unary, variable::Variable,
+        assign::Assign,
+        binary::Binary,
+        body::Body,
+        call::Call,
+        function::{Function, FunctionArgument},
+        if_expression::If,
+        literal::Literal,
+        unary::Unary,
+        variable::Variable,
     },
-    tokeniser::{Keyword, Operator, Symbol, Token},
+    tokeniser::{self, Keyword, Operator, Symbol, Token, TypeLiteral},
+    types::{BaseType, FunctionType, Type},
 };
 
 struct Parser {
@@ -20,6 +28,10 @@ impl Parser {
             self.index += 1;
         }
         return self.previous();
+    }
+
+    fn advance_symbol(&mut self) -> Symbol {
+        self.advance().symbol
     }
 
     fn peek(&mut self) -> Token {
@@ -101,28 +113,150 @@ impl Parser {
         ));
     }
 
-    fn function_definition(&mut self) -> Result<Box<dyn Expression>, String> {
-        let mut argument_names = Vec::new();
-        while let Some(Symbol::Identifier(identifier)) = self.safe_peek_symbol() {
-            argument_names.push(identifier);
+    fn type_base(&mut self) -> Result<Type, String> {
+        if let Some(Symbol::Literal(tokeniser::Literal::Null)) = self.safe_peek_symbol() {
             self.advance();
+            return Ok(Type::BaseType(BaseType::Null));
+        }
+
+        if self.check(Symbol::LeftParen) {
+            self.advance();
+
+            if self.check(Symbol::RightParen) {
+                self.advance();
+
+                if self.check(Symbol::Arrow) {
+                    self.advance();
+
+                    let return_type = self.type_annotation()?;
+                    return Ok(Type::Function(Box::from(FunctionType::Literal(
+                        Vec::new(),
+                        return_type,
+                    ))));
+                }
+            }
+
+            let first = &self.type_annotation()?;
+
+            let mut argument_types = Vec::new();
+            argument_types.push(first.clone());
+
+            if self.check(Symbol::RightParen) {
+                self.advance();
+
+                if !self.check(Symbol::Arrow) {
+                    self.advance();
+                    return Ok(first.clone());
+                }
+
+                let return_type = self.type_annotation()?;
+
+                return Ok(Type::Function(Box::from(FunctionType::Literal(
+                    argument_types,
+                    return_type,
+                ))));
+            }
+
+            if self.check(Symbol::Comma) {
+                self.advance();
+
+                while self.check(Symbol::Comma) {
+                    self.advance();
+                    let type_expr = self.type_annotation()?;
+                    argument_types.push(type_expr);
+                }
+
+                self.expect(&[Symbol::Arrow])?;
+
+                let return_type = self.type_annotation()?;
+
+                return Ok(Type::Function(Box::from(FunctionType::Literal(
+                    argument_types,
+                    return_type,
+                ))));
+            }
+
+            return Err("meepmeep".to_string());
+        }
+
+        let Symbol::TypeLiteral(type_literal) = self.advance_symbol() else {
+            return Err("Expected type annotation".to_owned());
+        };
+
+        Ok(match type_literal {
+            TypeLiteral::Any => Type::BaseType(BaseType::Any),
+            TypeLiteral::Number => Type::BaseType(BaseType::Number),
+            TypeLiteral::String => Type::BaseType(BaseType::String),
+            TypeLiteral::Boolean => Type::BaseType(BaseType::Boolean),
+        })
+    }
+
+    fn type_or(&mut self) -> Result<Type, String> {
+        let mut type_expr = self.type_base()?;
+
+        while let Some(_) = self.match_operators(&[Operator::Or]) {
+            let right = self.type_base()?;
+            type_expr = Type::Or(Box::from(type_expr), Box::from(right));
+        }
+
+        return Ok(type_expr);
+    }
+
+    fn type_annotation(&mut self) -> Result<Type, String> {
+        self.type_or()
+    }
+
+    fn function_arguments(&mut self) -> Result<Vec<FunctionArgument>, String> {
+        let mut arguments: Vec<FunctionArgument> = Vec::new();
+
+        if !self.check(Symbol::RightParen) {
+            loop {
+                let Symbol::Identifier(name) = self.advance_symbol() else {
+                    return Err("Expected identifier in arg list".to_owned());
+                };
+                self.expect(&[Symbol::Colon])?;
+
+                let type_annotation = match self.type_annotation() {
+                    Err(err) => Err(format!("In function argument definition | {}", err)),
+                    t => t,
+                }?;
+                arguments.push(FunctionArgument {
+                    name,
+                    type_annotation,
+                });
+
+                if let Some(Symbol::RightParen) = self.safe_peek_symbol() {
+                    break;
+                }
+
+                self.expect(&[Symbol::Comma])?;
+            }
         }
 
         self.expect(&[Symbol::RightParen])?;
-        match self.expect(&[Symbol::Arrow]) {
-            Ok(_) => (),
-            Err(_) if argument_names.len() == 1 => {
-                return Ok(Box::new(Variable {
-                    name: argument_names[0].clone(),
-                }))
-            }
-            Err(err) => return Err(err),
-        }
+
+        return Ok(arguments);
+    }
+
+    fn function_definition(&mut self) -> Result<Box<dyn Expression>, String> {
+        let arguments = self.function_arguments()?;
+
+        self.expect(&[Symbol::Colon])?;
+        let return_type = match self.type_annotation() {
+            Err(err) => Err(format!(
+                "After function argument definition, expected return type | {}",
+                err
+            )),
+            t => t,
+        }?;
+
+        self.expect(&[Symbol::Arrow])?;
 
         let body = self.expression()?;
 
         Ok(Box::new(Function {
-            argument_names,
+            arguments,
+            return_type,
             body: Rc::new(body),
         }))
     }
@@ -156,7 +290,7 @@ impl Parser {
 
                 Ok(expr)
             }
-            _ => Err(format!("Unrecognized token")),
+            _ => Err(format!("Cannot match token: {:#?}", self.previous())),
         }
     }
 
@@ -173,6 +307,8 @@ impl Parser {
                     if !self.check(Symbol::Comma) {
                         break;
                     }
+
+                    self.advance();
                 }
             }
 
@@ -342,9 +478,9 @@ impl Parser {
     }
 
     pub fn next(&mut self) -> Result<Box<dyn Expression>, String> {
-        let expr = self.expression();
+        let expr = self.expression()?;
         self.expect(&[Symbol::Semi])?;
-        return expr;
+        return Ok(expr);
     }
 }
 

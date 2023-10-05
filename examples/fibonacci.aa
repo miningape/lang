@@ -1,7 +1,15 @@
-let fib = (n) =>
+let fib = (n: number): number =>
     if n <= 1
         n
     else
         fib(n - 1) + fib(n - 2);
 
-print(fib(6));
+let factorial = (n: number): number => 
+    if n == 1
+        n
+    else 
+        n * factorial(n - 1);
+
+print("Fibonacci 6: ", fib(6));
+print("Factorial 6: ", factorial(6));
+print(add(1, 2));
