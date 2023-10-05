@@ -58,7 +58,19 @@ impl FunctionType {
     pub fn apply(&self, argument_types: Vec<Type>) -> Result<Type, String> {
         match self {
             Self::Unrefined(expected_argument_types, expected_return_type, _) => {
-                panic!("Applying unrefined function");
+                if argument_types.len() != expected_argument_types.len() {
+                    return Err(String::from("Argument supplied length doesn't match"));
+                }
+
+                for (i, argument_type) in argument_types.iter().enumerate() {
+                    let expected_argument_type = &expected_argument_types[i];
+
+                    if !argument_type.is_sub_type_of(expected_argument_type) {
+                        return Err(String::from("Argument supplied type doesn't match"));
+                    }
+                }
+
+                Ok(expected_return_type.clone())
             }
             Self::Literal(expected_argument_types, expected_return_type) => {
                 if argument_types.len() != expected_argument_types.len() {
