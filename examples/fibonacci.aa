@@ -10,5 +10,9 @@ let factorial = (n: number): number =>
     else 
         n * factorial(n - 1);
 
+let add = (a: any, b: any): string | number
+    => a + b;
+
 print("Fibonacci 6: ", fib(6));
 print("Factorial 6: ", factorial(6));
+print(add(1, 2));

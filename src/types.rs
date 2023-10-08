@@ -31,6 +31,8 @@ impl FunctionType {
                 let return_type = function.body.check_type(type_checker)?;
                 type_checker.pop_environment()?;
 
+                print!("{:#?} - {:#?}", return_type, expected_return_type);
+
                 if let Type::BaseType(BaseType::Any) = expected_return_type {
                     return Ok(Type::Function(Box::from(FunctionType::Literal(
                         expected_argument_types.clone(),
@@ -210,6 +212,11 @@ impl Type {
         }
 
         if let Type::Or(left, right) = other {
+            if let Type::Or(self_left, self_right) = self {
+                return (self_left.is_sub_type_of(left) || self_left.is_sub_type_of(right))
+                    && (self_right.is_sub_type_of(left) || self_right.is_sub_type_of(right));
+            }
+
             return self.is_sub_type_of(left) || self.is_sub_type_of(right);
         }
 
