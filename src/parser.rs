@@ -241,14 +241,16 @@ impl Parser {
     fn function_definition(&mut self) -> Result<Box<dyn Expression>, String> {
         let arguments = self.function_arguments()?;
 
-        self.expect(&[Symbol::Colon])?;
-        let return_type = match self.type_annotation() {
-            Err(err) => Err(format!(
-                "After function argument definition, expected return type | {}",
-                err
-            )),
-            t => t,
-        }?;
+        let mut return_type = Type::BaseType(BaseType::Infer);
+        if let Some(_) = self.match_symbols(&[Symbol::Colon]) {
+            return_type = match self.type_annotation() {
+                Err(err) => Err(format!(
+                    "After function argument definition, expected return type | {}",
+                    err
+                )),
+                t => t,
+            }?;
+        }
 
         self.expect(&[Symbol::Arrow])?;
 

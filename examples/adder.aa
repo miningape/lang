@@ -1,6 +1,6 @@
-let makeAdder = (): () => number => {
+let makeAdder = () => {
     let count = 0;
-    (): number => let count = count + 1;
+    () => let count = count + 1;
 };
 
 let adder = makeAdder();

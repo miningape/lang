@@ -2,7 +2,7 @@ use std::{cell::RefCell, fmt::Debug, rc::Rc};
 
 use crate::{
     callable::Callable,
-    types::{FunctionType, Type},
+    types::{BaseType, FunctionType, Type},
     value::Value,
 };
 
@@ -37,23 +37,23 @@ impl Clone for Function {
 }
 
 impl Expression for Function {
-    fn check_type(&self, _: &mut Interpreter<Type>) -> Result<Type, String> {
-        let argument_types: Vec<Type> = self
-            .arguments
-            .iter()
-            .map(|arg| arg.type_annotation.clone())
-            .collect();
-
-        Ok(Type::Function(Box::from(FunctionType::Unrefined(
-            argument_types,
-            self.return_type.clone(),
-            Box::from(self.clone()),
-        ))))
+    fn check_type(&self, type_checker: &mut Interpreter<Type>) -> Result<Type, String> {
+        Ok(Type::Function(Box::from(FunctionType::WithBody(Rc::from(
+            RefCell::from(FunctionInstance {
+                arguments: self.arguments.clone(),
+                return_type: self.return_type.clone(),
+                actual_type: Rc::from(RefCell::from(None)),
+                body: Rc::clone(&self.body),
+                interpreter: type_checker.clone(),
+            }),
+        )))))
     }
 
     fn interpret(&self, interpreter: &mut Interpreter<Value>) -> Result<Value, String> {
         Ok(Value::Function(Rc::new(RefCell::new(FunctionInstance {
-            argument_names: self.arguments.iter().map(|arg| arg.name.clone()).collect(),
+            arguments: self.arguments.clone(), //self.arguments.iter().map(|arg| arg.name.clone()).collect(),
+            return_type: self.return_type.clone(),
+            actual_type: Rc::from(RefCell::from(None)),
             body: Rc::clone(&self.body),
             interpreter: interpreter.clone(),
         }))))
@@ -69,34 +69,113 @@ impl Expression for Function {
     }
 }
 
-pub struct FunctionInstance {
-    pub argument_names: Vec<String>,
+pub struct FunctionInstance<T> {
+    pub arguments: Vec<FunctionArgument>,
+    pub return_type: Type,
+    pub actual_type: Rc<RefCell<Option<FunctionType>>>,
+
     pub body: Rc<Box<dyn Expression>>,
-    pub interpreter: Interpreter<Value>,
+    pub interpreter: Interpreter<T>,
 }
 
-impl Callable for FunctionInstance {
+impl<T: Debug> Debug for FunctionInstance<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(format!("Function {:#?}", self.body.to_string()).as_str())
+    }
+}
+
+impl Callable for FunctionInstance<Type> {
     fn signature(&self) -> String {
         String::from("Function")
     }
 
+    fn get_type(&mut self) -> Result<FunctionType, String> {
+        if let Some(function_type) = self.actual_type.borrow().clone() {
+            return Ok(function_type);
+        }
+
+        let argument_types: Vec<Type> = self
+            .arguments
+            .iter()
+            .map(|arg| arg.type_annotation.clone())
+            .collect();
+
+        *self.actual_type.borrow_mut() = Some(FunctionType::Literal(
+            argument_types.clone(),
+            self.return_type.clone(),
+        ));
+
+        self.interpreter.push_environment();
+        for function_argument in self.arguments.iter() {
+            self.interpreter.set(
+                function_argument.name.clone(),
+                function_argument.type_annotation.clone(),
+            );
+        }
+
+        let return_type = self.body.check_type(&mut self.interpreter)?;
+        self.interpreter.pop_environment()?;
+
+        if let Type::BaseType(BaseType::Infer) = self.return_type {
+            self.return_type = return_type;
+        } else if !return_type.is_sub_type_of(&self.return_type) {
+            return Err(format!(
+                "Actual return type ({:#?}) does not match the return type of the body ({:#?})",
+                return_type, self.return_type
+            ));
+        }
+
+        *self.actual_type.borrow_mut() = Some(FunctionType::Literal(
+            argument_types,
+            self.return_type.clone(),
+        ));
+
+        self.get_type()
+    }
+
     fn clone(&self) -> Box<dyn Callable> {
         return Box::new(FunctionInstance {
-            argument_names: self.argument_names.clone(),
+            arguments: self.arguments.clone(),
+            return_type: self.return_type.clone(),
+            actual_type: Rc::clone(&self.actual_type),
+            body: Rc::clone(&self.body),
+            interpreter: self.interpreter.clone(),
+        });
+    }
+
+    fn call(&mut self, _: Vec<crate::value::Value>) -> Result<Value, String> {
+        panic!("Cannot compute value in type environment")
+    }
+}
+
+impl Callable for FunctionInstance<Value> {
+    fn signature(&self) -> String {
+        String::from("Function")
+    }
+
+    fn get_type(&mut self) -> Result<FunctionType, String> {
+        panic!("Cannot get type of function instance");
+    }
+
+    fn clone(&self) -> Box<dyn Callable> {
+        return Box::new(FunctionInstance {
+            arguments: self.arguments.clone(),
+            return_type: self.return_type.clone(),
+            actual_type: self.actual_type.clone(),
             body: Rc::clone(&self.body),
             interpreter: self.interpreter.clone(),
         });
     }
 
     fn call(&mut self, arguments: Vec<crate::value::Value>) -> Result<Value, String> {
-        if self.argument_names.len() != arguments.len() {
+        if self.arguments.len() != arguments.len() {
             return Err(format!("Arguments for function mismatch"));
         }
 
         self.interpreter.push_environment();
-        for (index, argument_name) in self.argument_names.iter().enumerate() {
+        for (index, argument) in self.arguments.iter().enumerate() {
             self.interpreter
-                .set(argument_name.to_string(), arguments[index].clone());
+                .set(argument.name.to_string(), arguments[index].clone());
         }
 
         let result = self.body.interpret(&mut self.interpreter);
