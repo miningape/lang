@@ -133,6 +133,8 @@ impl Parser {
                         Vec::new(),
                         return_type,
                     ))));
+                } else {
+                    return Err(String::from("Expected => after ()"));
                 }
             }
 
@@ -157,26 +159,21 @@ impl Parser {
                 ))));
             }
 
-            if self.check(Symbol::Comma) {
+            while self.check(Symbol::Comma) {
                 self.advance();
-
-                while self.check(Symbol::Comma) {
-                    self.advance();
-                    let type_expr = self.type_annotation()?;
-                    argument_types.push(type_expr);
-                }
-
-                self.expect(&[Symbol::Arrow])?;
-
-                let return_type = self.type_annotation()?;
-
-                return Ok(Type::Function(Box::from(FunctionType::Literal(
-                    argument_types,
-                    return_type,
-                ))));
+                let type_expr = self.type_annotation()?;
+                argument_types.push(type_expr);
             }
 
-            return Err("meepmeep".to_string());
+            self.expect(&[Symbol::RightParen])?;
+            self.expect(&[Symbol::Arrow])?;
+
+            let return_type = self.type_annotation()?;
+
+            return Ok(Type::Function(Box::from(FunctionType::Literal(
+                argument_types,
+                return_type,
+            ))));
         }
 
         let Symbol::TypeLiteral(type_literal) = self.advance_symbol() else {
