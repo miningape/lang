@@ -1,6 +1,6 @@
 let makeAdder = () => {
-    let count = 0;
-    () => let count = count + 1;
+    let count: mutable = 0;
+    () => count = count + 1;
 };
 
 let adder = makeAdder();
@@ -8,3 +8,6 @@ print(adder());
 print(adder());
 print(adder());
 print(adder());
+
+let pooper = (jeff: () => number) => jeff() + 10;
+print(pooper(() => 30));

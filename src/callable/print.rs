@@ -18,10 +18,7 @@ impl Callable for Print {
     fn get_type(&mut self) -> Result<FunctionType, String> {
         Ok(FunctionType::ArrayArgs(
             Type::BaseType(BaseType::Any),
-            Type::Or(
-                Box::from(Type::BaseType(BaseType::String)),
-                Box::from(Type::BaseType(BaseType::Number)),
-            ),
+            Type::BaseType(BaseType::String),
         ))
     }
 

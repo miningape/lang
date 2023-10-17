@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{
     callable::print::Print,
-    environment::Environment,
+    environment::{Environment, Variable},
     types::{BaseType, FunctionType, Type},
     value::Value,
 };
@@ -11,6 +11,7 @@ pub mod assign;
 pub mod binary;
 pub mod body;
 pub mod call;
+pub mod declare;
 pub mod function;
 pub mod if_expression;
 pub mod literal;
@@ -28,11 +29,15 @@ impl<T: std::clone::Clone + std::fmt::Debug> Interpreter<T> {
         };
     }
 
-    pub fn get(&self, key: String) -> Option<T> {
+    pub fn create(&self, key: String, value: Variable<T>) -> Result<Variable<T>, String> {
+        self.environment.borrow_mut().create(key, value)
+    }
+
+    pub fn get(&self, key: String) -> Option<Variable<T>> {
         self.environment.borrow().get(key)
     }
 
-    pub fn set(&self, key: String, value: T) -> Option<T> {
+    pub fn set(&self, key: String, value: T) -> Result<Variable<T>, String> {
         self.environment.borrow_mut().set(key, value)
     }
 
@@ -64,22 +69,29 @@ impl<T> Clone for Interpreter<T> {
 
 impl Interpreter<Value> {
     pub fn seed(&mut self) {
-        self.set(
+        self.create(
             "print".to_owned(),
-            Value::Function(Rc::new(RefCell::new(Print {}))),
-        );
+            Variable {
+                mutable: false,
+                value: Value::Function(Rc::new(RefCell::new(Print {}))),
+            },
+        )
+        .unwrap();
     }
 }
 
 impl Interpreter<Type> {
     pub fn seed(&mut self) {
-        self.set(
+        self.create(
             "print".to_owned(),
-            Type::Function(Box::from(FunctionType::ArrayArgs(
-                Type::BaseType(BaseType::Any),
-                Type::BaseType(BaseType::String),
-            ))),
-        );
+            Variable {
+                mutable: false,
+                value: Type::Function(Box::from(FunctionType::WithBody(Rc::from(RefCell::from(
+                    Print {},
+                ))))),
+            },
+        )
+        .unwrap();
     }
 }
 

@@ -1,12 +1,14 @@
 use std::rc::Rc;
 
 use crate::{
+    environment,
     expression::Expression,
     expression::{
         assign::Assign,
         binary::Binary,
         body::Body,
         call::Call,
+        declare::Declare,
         function::{Function, FunctionArgument},
         if_expression::If,
         literal::Literal,
@@ -436,13 +438,67 @@ impl Parser {
     }
 
     fn assign(&mut self) -> Result<Box<dyn Expression>, String> {
+        if let Some(Symbol::Identifier(identifier)) = self.safe_peek_symbol() {
+            self.advance();
+            if self.check(Symbol::Assign) {
+                self.advance();
+                let value = self.expression()?;
+
+                return Ok(Box::from(Assign {
+                    key: identifier,
+                    value,
+                }));
+            } else {
+                self.index -= 1;
+            }
+        }
+
+        self.logic_or()
+    }
+
+    fn optional_type_annotation(&mut self) -> Type {
+        let index_before = self.index;
+
+        match self.type_annotation() {
+            Ok(annotation) => annotation,
+            Err(_) => {
+                self.index = index_before;
+                Type::BaseType(BaseType::Infer)
+            }
+        }
+    }
+
+    fn declare(&mut self) -> Result<Box<dyn Expression>, String> {
         if let Some(_) = self.match_keywords(&[Keyword::Let]) {
             return match self.peek().symbol {
                 Symbol::Identifier(key) => {
                     self.advance();
+
+                    let mut assigned_type: Option<environment::Variable<Type>> = None;
+                    if self.check(Symbol::Colon) {
+                        self.advance();
+
+                        let mut mutable = false;
+                        if self.check(Symbol::Keyword(Keyword::Mutable)) {
+                            self.advance();
+                            mutable = true;
+                        }
+
+                        let value = match mutable {
+                            true => self.optional_type_annotation(),
+                            false => self.type_annotation()?,
+                        };
+
+                        assigned_type = Some(environment::Variable { mutable, value })
+                    }
+
                     self.expect(&[Symbol::Assign])?;
                     let value = self.expression()?;
-                    Ok(Box::from(Assign { key, value }))
+                    Ok(Box::from(Declare {
+                        key,
+                        assigned_type,
+                        value,
+                    }))
                 }
                 symbol => Err(format!(
                     "Expected Identifier after `let` keyword, got: {:#?}",
@@ -469,11 +525,11 @@ impl Parser {
             }));
         }
 
-        self.logic_or()
+        self.assign()
     }
 
     fn expression(&mut self) -> Result<Box<dyn Expression>, String> {
-        return self.assign();
+        return self.declare();
     }
 
     pub fn next(&mut self) -> Result<Box<dyn Expression>, String> {

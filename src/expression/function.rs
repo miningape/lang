@@ -107,10 +107,13 @@ impl Callable for FunctionInstance<Type> {
 
         self.interpreter.push_environment();
         for function_argument in self.arguments.iter() {
-            self.interpreter.set(
+            self.interpreter.create(
                 function_argument.name.clone(),
-                function_argument.type_annotation.clone(),
-            );
+                crate::environment::Variable {
+                    mutable: false,
+                    value: function_argument.type_annotation.clone(),
+                },
+            )?;
         }
 
         let return_type = self.body.check_type(&mut self.interpreter)?;
@@ -174,8 +177,13 @@ impl Callable for FunctionInstance<Value> {
 
         self.interpreter.push_environment();
         for (index, argument) in self.arguments.iter().enumerate() {
-            self.interpreter
-                .set(argument.name.to_string(), arguments[index].clone());
+            self.interpreter.create(
+                argument.name.to_string(),
+                crate::environment::Variable {
+                    mutable: false,
+                    value: arguments[index].clone(),
+                },
+            )?;
         }
 
         let result = self.body.interpret(&mut self.interpreter);
