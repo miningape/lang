@@ -2,9 +2,9 @@
 
 roadmap:
 1. ~~Type checking~~
-2. Finish variables
-  - Mutability
-  - Type checking
+2. ~~Finish variables~~
+  - ~~Mutability~~
+  - ~~Type checking~~
 3. Lists!
   - List creation
     - range
@@ -18,10 +18,10 @@ roadmap:
 
 todos:
 
-- [ ] variables
+- [x] variables
   - [x] create
-  - [ ] mutate syntax
-  - [ ] const
+  - [x] mutate syntax
+  - [x] const
 - [ ] loop expressions
   - [ ] `while`
   - [ ] `for` (iterator)

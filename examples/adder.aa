@@ -11,3 +11,8 @@ print(adder());
 
 let pooper = (jeff: () => number) => jeff() + 10;
 print(pooper(() => 30));
+
+let x: mutable = 10;
+x = "10";
+x = 10 + 1;
+print(x);

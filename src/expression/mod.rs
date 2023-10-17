@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use crate::{
     callable::print::Print,
     environment::{Environment, Variable},
-    types::{BaseType, FunctionType, Type},
+    types::{FunctionType, Type},
     value::Value,
 };
 

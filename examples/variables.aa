@@ -1,3 +1,9 @@
+let x: mutable string | number = 10;
+x = "10";
+x = 10 + 1;
+print(x);
+
+
 // const as default
 let x = 10;
 x = x + 1; // Error!
