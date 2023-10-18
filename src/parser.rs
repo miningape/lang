@@ -12,6 +12,7 @@ use crate::{
         function::{Function, FunctionArgument},
         if_expression::If,
         literal::Literal,
+        return_expression::Return,
         unary::Unary,
         variable::Variable,
     },
@@ -523,6 +524,18 @@ impl Parser {
                 body,
                 else_body,
             }));
+        }
+
+        if let Some(Symbol::Keyword(Keyword::Return)) = self.safe_peek_symbol() {
+            self.advance();
+
+            if let Some(Symbol::Semi) = self.safe_peek_symbol() {
+                return Ok(Box::from(Return { expression: None }));
+            }
+
+            let expression = Some(self.expression()?);
+
+            return Ok(Box::from(Return { expression }));
         }
 
         self.assign()

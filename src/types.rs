@@ -57,9 +57,11 @@ impl FunctionType {
             };
         }
 
-        if let FunctionType::WithBody(_) = other {
-            panic!("Cannot check subtype against other function instance ");
-            // return self.is_sub_type_of(&other_function_instance.get_type());
+        if let FunctionType::WithBody(function_instance) = other {
+            return match function_instance.borrow().clone().get_type() {
+                Err(_) => false,
+                Ok(type_) => type_.is_sub_type_of(other),
+            };
         }
 
         if let FunctionType::Literal(argument_types, return_type) = self {
@@ -109,9 +111,28 @@ pub enum Type {
     BaseType(BaseType),
     Or(Box<Type>, Box<Type>),
     Function(Box<FunctionType>),
+    Return(Box<Type>),
 }
 
 impl Type {
+    pub fn get_return_type(&self) -> Option<Type> {
+        match self {
+            Self::BaseType(_) => None,
+            Self::Function(_) => None,
+            Self::Return(return_type) => Some((**return_type).clone()),
+            Self::Or(left, right) => match left.get_return_type() {
+                None => right.get_return_type(),
+                Some(return_type) => match right.get_return_type() {
+                    None => Some((return_type).clone()),
+                    Some(right_return_type) => Some(Type::Or(
+                        Box::from(return_type),
+                        Box::from(right_return_type),
+                    )),
+                },
+            },
+        }
+    }
+
     pub fn is_sub_type_of(&self, other: &Type) -> bool {
         if let Type::BaseType(BaseType::Any) = other {
             return true;
@@ -146,6 +167,8 @@ impl Type {
             if let Type::BaseType(other_base_type) = other {
                 return base_type == other_base_type;
             }
+
+            return false;
         }
 
         return false;

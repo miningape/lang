@@ -8,6 +8,7 @@ pub enum Value {
     String(String),
     Number(f32),
     Boolean(bool),
+    Return(Box<Value>),
     Function(Rc<RefCell<dyn Callable>>),
 }
 
@@ -25,6 +26,7 @@ fn string_add<L: std::fmt::Display, R: std::fmt::Display>(left: L, right: R) -> 
 impl Value {
     pub fn to_string(&self) -> String {
         match self {
+            Value::Return(_) => panic!("Cannot stringify return value"),
             Value::Null => String::from("null"),
             Value::Number(number) => number.to_string(),
             Value::String(string) => format!("{}", string),
@@ -41,6 +43,7 @@ impl Value {
 
     pub fn to_log_string(&self) -> String {
         match self {
+            Value::Return(_) => panic!("Cannot stringify return value"),
             Value::Null => String::from("null"),
             Value::Number(number) => number.to_string(),
             Value::String(string) => format!("\"{}\"", string),

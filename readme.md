@@ -37,7 +37,7 @@ todos:
     - [ ] list
       - [ ] head / tail
       - [ ] positional destructuring
-- [ ] block `return`
+- [x] block `return`
 - [ ] exceptions
 - [ ] function application / pipe with auto curry
 - [ ] data structures

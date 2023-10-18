@@ -58,6 +58,7 @@ pub enum Keyword {
     Let,
     If,
     Else,
+    Return,
     Mutable,
 }
 
@@ -185,6 +186,7 @@ fn get_symbol_from_identifier(identifier: String) -> Symbol {
         "string" => Symbol::TypeLiteral(TypeLiteral::String),
         "boolean" => Symbol::TypeLiteral(TypeLiteral::Boolean),
         "mutable" => Symbol::Keyword(Keyword::Mutable),
+        "return" => Symbol::Keyword(Keyword::Return),
         _ => Symbol::Identifier(identifier),
     }
 }

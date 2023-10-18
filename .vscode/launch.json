@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "Debug",
             "program": "${workspaceFolder}/target/debug/lang",        
-            "args": ["examples/fibonacci.aa"],
+            "args": ["examples/return_types.aa"],
             "cwd": "${workspaceFolder}"
         }
     ]

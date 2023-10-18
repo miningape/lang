@@ -1,0 +1,7 @@
+let x = (argument: boolean): string | number => {
+    if argument return "string";
+
+    1;
+};
+
+print(x(true));

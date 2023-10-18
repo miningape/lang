@@ -50,6 +50,7 @@ impl Expression for Unary {
 
         match self.value.interpret(interpreter)? {
             Value::Number(number) => Ok(Value::Number(-number)),
+            Value::Return(_) => Err(format!("Cannot negate return")),
             Value::Null => Err(format!("Cannot negate null")),
             Value::String(string) => Err(format!("Cannot negate string: {}", string)),
             Value::Boolean(boolean) => Err(format!("Cannot negate boolean: {}", boolean)),

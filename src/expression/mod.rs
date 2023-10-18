@@ -15,6 +15,7 @@ pub mod declare;
 pub mod function;
 pub mod if_expression;
 pub mod literal;
+pub mod return_expression;
 pub mod unary;
 pub mod variable;
 
