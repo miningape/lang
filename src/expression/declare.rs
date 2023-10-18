@@ -33,6 +33,10 @@ impl Expression for Declare {
                     ));
                 }
 
+                if let Some(_) = actual_type.value.get_return_type() {
+                    return Err(format!("Cannot assign variable to return value"));
+                }
+
                 actual_type = assigned_type.clone()
             }
         }

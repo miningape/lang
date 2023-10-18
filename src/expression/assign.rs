@@ -31,6 +31,10 @@ impl Expression for Assign {
             ));
         }
 
+        if let Some(_) = assigned_type.get_return_type() {
+            return Err(format!("Cannot assign variable to return value"));
+        }
+
         Ok(assigned_type)
     }
 
