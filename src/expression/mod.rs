@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use crate::{
-    callable::print::Print,
+    callable::{map::Map, print::Print},
     environment::{Environment, Variable},
     types::{FunctionType, Type},
     value::Value,
@@ -14,6 +14,7 @@ pub mod call;
 pub mod declare;
 pub mod function;
 pub mod if_expression;
+pub mod list;
 pub mod literal;
 pub mod return_expression;
 pub mod unary;
@@ -78,6 +79,15 @@ impl Interpreter<Value> {
             },
         )
         .unwrap();
+
+        self.create(
+            "map".to_owned(),
+            Variable {
+                mutable: false,
+                value: Value::Function(Rc::new(RefCell::new(Map {}))),
+            },
+        )
+        .unwrap();
     }
 }
 
@@ -89,6 +99,17 @@ impl Interpreter<Type> {
                 mutable: false,
                 value: Type::Function(Box::from(FunctionType::WithBody(Rc::from(RefCell::from(
                     Print {},
+                ))))),
+            },
+        )
+        .unwrap();
+
+        self.create(
+            "map".to_owned(),
+            Variable {
+                mutable: false,
+                value: Type::Function(Box::from(FunctionType::WithBody(Rc::from(RefCell::from(
+                    Map {},
                 ))))),
             },
         )

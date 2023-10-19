@@ -8,6 +8,7 @@ use expression::Interpreter;
 use crate::{types::Type, value::Value};
 
 pub mod callable;
+pub mod data;
 pub mod environment;
 pub mod expression;
 pub mod parser;

@@ -110,6 +110,7 @@ pub enum BaseType {
 pub enum Type {
     BaseType(BaseType),
     Or(Box<Type>, Box<Type>),
+    List(Box<Type>),
     Function(Box<FunctionType>),
     Return(Box<Type>),
 }
@@ -117,6 +118,7 @@ pub enum Type {
 impl Type {
     pub fn get_return_type(&self) -> Option<Type> {
         match self {
+            Self::List(_) => None,
             Self::BaseType(_) => None,
             Self::Function(_) => None,
             Self::Return(return_type) => Some((**return_type).clone()),
@@ -163,12 +165,18 @@ impl Type {
             return false;
         }
 
+        if let Type::List(list_type) = self {
+            if let Type::List(other_list_type) = other {
+                return list_type.is_sub_type_of(&other_list_type);
+            }
+
+            return false;
+        }
+
         if let Type::BaseType(base_type) = self {
             if let Type::BaseType(other_base_type) = other {
                 return base_type == other_base_type;
             }
-
-            return false;
         }
 
         return false;

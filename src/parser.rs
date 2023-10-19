@@ -11,6 +11,7 @@ use crate::{
         declare::Declare,
         function::{Function, FunctionArgument},
         if_expression::If,
+        list::ListLiteral,
         literal::Literal,
         return_expression::Return,
         unary::Unary,
@@ -70,6 +71,19 @@ impl Parser {
         }
 
         return self.peek().symbol == symbol;
+    }
+
+    fn check_advance(&mut self, symbol: Symbol) -> bool {
+        if self.is_at_end() {
+            return false;
+        }
+
+        if self.peek().symbol == symbol {
+            self.advance();
+            return true;
+        }
+
+        return false;
     }
 
     fn match_symbols(&mut self, symbols: &[Symbol]) -> Option<Token> {
@@ -291,6 +305,19 @@ impl Parser {
                 self.expect(&[Symbol::RightParen])?;
 
                 Ok(expr)
+            }
+            Symbol::LeftBracket => {
+                let mut elements = Vec::new();
+
+                elements.push(self.expression()?);
+
+                while self.check_advance(Symbol::Comma) {
+                    elements.push(self.expression()?);
+                }
+
+                self.expect(&[Symbol::RightBracket])?;
+
+                Ok(Box::from(ListLiteral { elements }))
             }
             _ => Err(format!("Cannot match token: {:#?}", self.previous())),
         }

@@ -1,7 +1,10 @@
-let x = (argument: boolean): string | number => {
+let x = (argument: boolean) => {
     if argument return "string";
 
     1;
 };
+
+let b = [1, 2];
+print(map(b, (elem: number) => elem + 1));
 
 print(x(true));

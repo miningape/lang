@@ -81,6 +81,8 @@ pub enum Symbol {
     RightParen,
     LeftBrace,
     RightBrace,
+    LeftBracket,
+    RightBracket,
 
     Newline,
     Fin,
@@ -106,6 +108,8 @@ fn scan_symbol(char: char) -> Option<Symbol> {
         '=' => Option::Some(Symbol::Assign),
         '{' => Option::Some(Symbol::LeftBrace),
         '}' => Option::Some(Symbol::RightBrace),
+        '[' => Option::Some(Symbol::LeftBracket),
+        ']' => Option::Some(Symbol::RightBracket),
         '>' => Option::Some(Symbol::Operator(Operator::GreaterThan)),
         '<' => Option::Some(Symbol::Operator(Operator::LesserThan)),
         '&' => Option::Some(Symbol::Operator(Operator::And)),

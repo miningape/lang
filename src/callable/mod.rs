@@ -1,3 +1,4 @@
+pub mod map;
 pub mod print;
 
 use crate::{types::FunctionType, value::Value};
